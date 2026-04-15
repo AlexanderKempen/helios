@@ -3,7 +3,7 @@ requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "helios-track"
+name = "helios-cli"
 version = "0.1.0"
 description = "Track and attribute LLM usage to git feature branches"
 readme = "README.md"

@@ -62,24 +62,27 @@ def _process_line(line: str) -> int:
     if input_tokens == 0 and output_tokens == 0:
         return 0
 
-    # Cache tokens count as input for cost purposes
     cache_creation = usage.get("cache_creation_input_tokens", 0)
     cache_read = usage.get("cache_read_input_tokens", 0)
-    total_input = input_tokens + cache_creation + cache_read
+    total_all_input = input_tokens + cache_creation + cache_read
 
     model = message.get("model")
     branch = data.get("gitBranch", "unknown")
     feature = _strip_branch_prefix(branch) if branch else "unknown"
     timestamp = data.get("timestamp")
 
-    cost = calculate_cost(total_input, output_tokens, model)
+    cost = calculate_cost(
+        input_tokens, output_tokens, model,
+        cache_creation_tokens=cache_creation,
+        cache_read_tokens=cache_read,
+    )
 
     insert_event(
         feature=feature,
         model=model,
-        tokens_in=total_input,
+        tokens_in=total_all_input,
         tokens_out=output_tokens,
-        total_tokens=total_input + output_tokens,
+        total_tokens=total_all_input + output_tokens,
         cost=cost,
         source="claude-code",
         timestamp=timestamp,

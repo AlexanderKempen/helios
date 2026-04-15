@@ -7,13 +7,13 @@ Like ccusage, but for feature-level AI cost tracking.
 ## Install
 
 ```bash
-pip install helios-track
+pip install helios-cli
 ```
 
 Or from source:
 
 ```bash
-git clone https://github.com/alexander/helios.git
+git clone https://github.com/AlexanderKempen/helios.git
 cd helios
 pip install -e .
 ```
