@@ -1,6 +1,7 @@
 import typer
 
 from .commands.analyze import analyze as _analyze
+from .commands.estimate import estimate as _estimate
 from .commands.report import report as _report
 from .commands.run import run as _run
 from .commands.start import start as _start
@@ -8,7 +9,7 @@ from .commands.sync import sync as _sync
 
 app = typer.Typer(
     name="helios",
-    help="Track and attribute LLM usage to git feature branches.",
+    help="Track and estimate LLM usage for git feature branches.",
     add_completion=False,
     no_args_is_help=True,
 )
@@ -42,6 +43,16 @@ def analyze():
 def sync():
     """Import usage from Claude Code interactive sessions."""
     _sync()
+
+
+@app.command()
+def estimate(
+    input: str = typer.Argument(..., help="Prompt string or path to a markdown file"),
+    repo_context: bool = typer.Option(False, "--repo-context", help="Include file tree and manifest signals"),
+    json: bool = typer.Option(False, "--json", help="Output as JSON"),
+):
+    """Estimate cost and scope before running a prompt."""
+    _estimate(input, repo_context=repo_context, json_output=json)
 
 
 if __name__ == "__main__":

@@ -1,8 +1,17 @@
 # Helios
 
-Track and attribute LLM usage (tokens + cost) to **git feature branches** during real development workflows.
+Track and estimate AI development cost.
 
-Like ccusage, but for feature-level AI cost tracking.
+Helios helps you understand LLM usage at the feature level. It answers two questions:
+
+- **What did this branch cost?**
+- **What will this request likely cost before I run it?**
+
+## Why
+
+AI makes implementation cheaper. That shifts the bottleneck from writing code to deciding what is worth building and what is worth spending tokens on.
+
+Helios makes that tradeoff visible.
 
 ## Install
 
@@ -18,87 +27,65 @@ cd helios
 pip install -e .
 ```
 
-## Quick start
+## Estimate a request
 
 ```bash
-# Import usage from your Claude Code sessions
-helios sync
-
-# See cost per feature branch
-helios report
+helios estimate "add csv export to dashboard"
+helios estimate issue.md
+helios estimate issue.md --repo-context
+helios estimate issue.md --json
 ```
 
-That's it. Zero config.
-
-## Commands
-
-### `helios sync`
-
-Import usage from Claude Code interactive sessions. Reads the session logs in `~/.claude/projects/` and attributes token usage to the git branch that was active during each conversation.
-
-Incremental — only imports new activity on each run.
+Example output:
 
 ```
-$ helios sync
-Syncing Claude Code sessions...
-Imported 3,197 usage events from Claude Code.
+╭──────────────────── helios estimate ─────────────────────╮
+│                                                          │
+│  Estimated cost:   $0.80 – $4.30                         │
+│  Estimated tokens: 45k – 220k                            │
+│  Scope:            medium                                │
+│  Files touched:    4 – 12                                │
+│  Risk:             moderate                              │
+│  Confidence:       72%                                   │
+│                                                          │
+│  Recommendation:   Needs clarification                   │
+│                                                          │
+│  Ambiguities:                                            │
+│    - Which export formats are required?                   │
+│    - Should API and UI both be included?                  │
+│                                                          │
+│  Acceptance criteria:                                    │
+│    - User can export dashboard data as CSV                │
+│    - Export respects active filters                       │
+│    - Download succeeds from dashboard                     │
+│                                                          │
+╰──────────────────────────────────────────────────────────╯
 ```
 
-### `helios run "prompt"`
+Helios highlights ambiguity and suggests acceptance criteria before you spend tokens on implementation.
 
-Send a prompt directly through Claude CLI and track usage in one step.
-
-```
-$ helios run "build an API endpoint for user registration"
-<Claude response>
-
-[helios] feature=ai-search tokens=2,100 cost=$0.03
-```
-
-### `helios report`
-
-Aggregated cost, tokens, and call count per feature branch, sorted by spend.
-
-```
-$ helios report
-
-AI Usage Report
-
-┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━━━┓
-┃ Feature            ┃     Cost ┃     Tokens ┃ Calls ┃ Top Model       ┃
-┡━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━━━┩
-│ auth-refactor      │ $142.50  │ 9,500,000  │   85  │ claude-opus-4-6 │
-│ billing-v2         │  $38.20  │ 2,540,000  │   42  │ claude-opus-4-6 │
-│ search-indexing    │  $12.10  │   800,000  │   18  │ claude-opus-4-6 │
-└────────────────────┴──────────┴────────────┴───────┴─────────────────┘
-```
-
-### `helios analyze`
-
-Send your usage summary to Claude for cost optimization insights.
+## Track executed work
 
 ```bash
-helios analyze
+helios sync                # import usage from Claude Code sessions
+helios report              # see cost per feature branch
+helios run "your prompt"   # send prompt through Claude and track usage
+helios analyze             # get cost optimization insights from Claude
 ```
-
-### `helios start`
-
-Confirm tracking is active for the current branch (optional — all commands auto-detect the branch).
 
 ## How it works
 
-1. `helios sync` reads Claude Code's JSONL session logs (`~/.claude/projects/`)
-2. Extracts token usage, model, and git branch from each assistant response
-3. Calculates cost using per-model pricing
-4. Stores events in a local SQLite database (`~/.helios/helios.db`)
-5. `helios report` aggregates per feature branch
+**Estimation** uses a hybrid approach:
+1. Deterministic heuristics score prompt complexity (keywords, scope, UI/backend signals)
+2. An LLM infers implementation breadth, risk, ambiguities, and acceptance criteria
+3. Token estimates are converted to dollar ranges using model-specific pricing
 
-All data stays local. No cloud, no auth, no config files.
+**Tracking** reads Claude Code's session logs (`~/.claude/projects/`), extracts token usage per assistant response, and attributes cost to the git branch that was active. All data is stored locally in `~/.helios/helios.db`.
 
 ## Requirements
 
 - Python 3.10+
-- [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) (for `sync` and `run` commands)
+- [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code)
 
 ## License
 
