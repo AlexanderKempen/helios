@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "helios-cli"
-version = "0.1.0"
+version = "0.1.1"
 description = "Track and attribute LLM usage to git feature branches"
 readme = "README.md"
 license = {text = "MIT"}
@@ -30,3 +30,6 @@ helios = "helios.main:app"
 
 [tool.setuptools.packages.find]
 include = ["helios*"]
+
+[tool.setuptools.package-data]
+"helios.db" = ["*.sql"]

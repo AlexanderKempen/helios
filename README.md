@@ -15,8 +15,15 @@ Helios makes that tradeoff visible.
 
 ## Install
 
+Helios is a Python CLI published on PyPI. There is no npm package — `npm install helios`
+installs an unrelated third-party module.
+
 ```bash
+pipx install helios-cli      # recommended: isolated environment
+# or
 pip install helios-cli
+# or run without installing
+uvx --from helios-cli helios --help
 ```
 
 Or from source:
