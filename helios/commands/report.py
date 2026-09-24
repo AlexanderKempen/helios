@@ -1,3 +1,5 @@
+import re
+
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -20,18 +22,25 @@ def _format_tokens(tokens: int) -> str:
     return str(tokens)
 
 
+MODEL_LABEL = re.compile(
+    r"claude-(?P<family>opus|sonnet|haiku|fable|mythos)-(?P<version>\d+(?:-\d+)?)"
+    r"|claude-(?P<major>\d+)(?:-(?P<minor>\d+))?-(?P<legacy_family>opus|sonnet|haiku)"
+)
+
+
 def _short_model(model: str | None) -> str:
+    """Render 'claude-sonnet-4-5-20250929' as 'Sonnet 4.5'."""
     if not model:
         return "—"
-    replacements = {
-        "claude-opus-4-6": "Opus 4",
-        "claude-sonnet-4-20250514": "Sonnet 4",
-        "claude-3-5-sonnet-20241022": "Sonnet 3.5",
-        "claude-3-opus-20240229": "Opus 3",
-        "claude-3-haiku-20240307": "Haiku 3",
-        "claude-3-5-haiku-20241022": "Haiku 3.5",
-    }
-    return replacements.get(model, model)
+    match = MODEL_LABEL.search(model)
+    if not match:
+        return model
+    if match.group("family"):
+        return f"{match.group('family').title()} {match.group('version').replace('-', '.')}"
+    version = match.group("major")
+    if match.group("minor"):
+        version = f"{version}.{match.group('minor')}"
+    return f"{match.group('legacy_family').title()} {version}"
 
 
 def report() -> None:

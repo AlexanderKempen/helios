@@ -14,6 +14,9 @@ class ClaudeResult:
     model: str | None
     tokens_in: int
     tokens_out: int
+    cache_creation_tokens: int = 0
+    cache_read_tokens: int = 0
+    estimated: bool = False
 
     @property
     def total_tokens(self) -> int:
@@ -41,37 +44,42 @@ def run_claude(prompt: str) -> ClaudeResult:
         print(f"Error: Claude CLI failed (exit {result.returncode}): {stderr}", file=sys.stderr)
         sys.exit(1)
 
-    return _parse_response(result.stdout)
+    return _parse_response(result.stdout, prompt)
 
 
-def _parse_response(raw: str) -> ClaudeResult:
+def _parse_response(raw: str, prompt: str = "") -> ClaudeResult:
     """Parse Claude CLI JSON output, falling back to plain text estimation."""
     try:
         data = json.loads(raw)
     except (json.JSONDecodeError, TypeError):
-        return ClaudeResult(
-            response=raw.strip(),
-            model=None,
-            tokens_in=estimate_tokens(raw),
-            tokens_out=estimate_tokens(raw),
-        )
+        return _estimated(raw.strip(), prompt, model=None)
 
-    response = data.get("result", raw.strip())
+    response = str(data.get("result", raw.strip()))
     model = data.get("model")
-    tokens_in = 0
-    tokens_out = 0
 
     usage = data.get("usage", {})
     tokens_in = usage.get("input_tokens", 0)
     tokens_out = usage.get("output_tokens", 0)
 
     if tokens_in == 0 and tokens_out == 0:
-        tokens_in = estimate_tokens(str(response))
-        tokens_out = estimate_tokens(str(response))
+        return _estimated(response, prompt, model=model)
 
     return ClaudeResult(
-        response=str(response),
+        response=response,
         model=model,
         tokens_in=tokens_in,
         tokens_out=tokens_out,
+        cache_creation_tokens=usage.get("cache_creation_input_tokens", 0),
+        cache_read_tokens=usage.get("cache_read_input_tokens", 0),
+    )
+
+
+def _estimated(response: str, prompt: str, model: str | None) -> ClaudeResult:
+    """Approximate usage when the CLI reports none: prompt in, response out."""
+    return ClaudeResult(
+        response=response,
+        model=model,
+        tokens_in=estimate_tokens(prompt) if prompt else 0,
+        tokens_out=estimate_tokens(response),
+        estimated=True,
     )

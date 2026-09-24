@@ -9,7 +9,7 @@ from rich.panel import Panel
 from rich.text import Text
 
 from ..services.claude import run_claude
-from ..services.cost import DEFAULT_PRICING
+from ..services.cost import default_model, resolve_pricing
 from ..services.heuristics import analyze_prompt
 from ..services.repo_context import gather_repo_context
 
@@ -93,7 +93,9 @@ def estimate(input_str: str, repo_context: bool = False, json_output: bool = Fal
         console.print(result.response)
         return
 
-    _apply_pricing(data)
+    model = result.model or default_model()
+    _apply_pricing(data, model)
+    data["model"] = model
 
     if json_output:
         console.print(json.dumps(data, indent=2))
@@ -127,17 +129,20 @@ def _parse_estimate(raw: str) -> dict | None:
     return None
 
 
-def _apply_pricing(data: dict) -> None:
-    """Ensure cost range reflects token estimates with current pricing."""
+# Agent runs are read-heavy: assume ~70% of tokens are input, ~30% output.
+INPUT_SHARE = 0.7
+
+
+def _apply_pricing(data: dict, model: str) -> None:
+    """Ensure cost range reflects token estimates priced for the model in use."""
     tokens = data.get("tokens", {})
     t_min = tokens.get("min", 0)
     t_max = tokens.get("max", 0)
     if t_min and t_max and "cost" in data:
-        input_price = DEFAULT_PRICING["input"]
-        output_price = DEFAULT_PRICING["output"]
-        avg_price = (input_price * 0.7 + output_price * 0.3) / 1_000_000
-        data["cost"]["min"] = round(t_min * avg_price, 2)
-        data["cost"]["max"] = round(t_max * avg_price, 2)
+        prices = resolve_pricing(model)
+        blended = (prices.input * INPUT_SHARE + prices.output * (1 - INPUT_SHARE)) / 1_000_000
+        data["cost"]["min"] = round(t_min * blended, 2)
+        data["cost"]["max"] = round(t_max * blended, 2)
 
 
 def _format_tokens(t: int) -> str:
@@ -182,6 +187,10 @@ def _render(data: dict) -> None:
 
     lines.append("Confidence:       ", style="dim")
     lines.append(f"{confidence:.0%}\n")
+
+    if data.get("model"):
+        lines.append("Priced as:        ", style="dim")
+        lines.append(f"{data['model']}\n", style="dim")
 
     rec_label, rec_style = REC_LABELS.get(rec, (rec, ""))
     lines.append("\nRecommendation:   ", style="dim")

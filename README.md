@@ -87,7 +87,26 @@ helios analyze             # get cost optimization insights from Claude
 2. An LLM infers implementation breadth, risk, ambiguities, and acceptance criteria
 3. Token estimates are converted to dollar ranges using model-specific pricing
 
-**Tracking** reads Claude Code's session logs (`~/.claude/projects/`), extracts token usage per assistant response, and attributes cost to the git branch that was active. All data is stored locally in `~/.helios/helios.db`.
+**Tracking** reads Claude Code's session logs (`~/.claude/projects/`), extracts token usage per assistant response, and attributes cost to the git branch that was active. All data is stored locally in `~/.helios/helios.db`. `sync` is incremental and idempotent: re-running it (or syncing a rotated log) never double-counts an event.
+
+Pricing lives in [`helios/data/pricing.json`](helios/data/pricing.json), keyed by model-id prefix
+so dated snapshots (`claude-sonnet-4-5-20250929`) and vendor-prefixed ids
+(`anthropic.claude-opus-5`) resolve to the right rates; unknown ids fall back to their model
+family.
+
+## Configuration
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `HELIOS_DB` | `~/.helios/helios.db` | Usage database location |
+| `CLAUDE_CONFIG_DIR` | `~/.claude` | Where `sync` looks for session logs |
+
+## Development
+
+```bash
+pip install -e ".[dev]"
+pytest
+```
 
 ## Requirements
 
