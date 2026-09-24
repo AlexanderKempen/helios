@@ -12,5 +12,11 @@ CREATE TABLE IF NOT EXISTS events (
 
 CREATE TABLE IF NOT EXISTS sync_state (
     file_path TEXT PRIMARY KEY,
-    last_offset INTEGER NOT NULL DEFAULT 0
+    last_offset INTEGER NOT NULL DEFAULT 0,
+    file_size INTEGER NOT NULL DEFAULT 0
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_events_identity
+    ON events (timestamp, feature, source, tokens_in, tokens_out);
+
+CREATE INDEX IF NOT EXISTS idx_events_feature ON events (feature);
