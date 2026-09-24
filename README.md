@@ -108,6 +108,20 @@ pip install -e ".[dev]"
 pytest
 ```
 
+## Releasing
+
+Publishing runs from the `Release` workflow on a `v*` tag, using PyPI [trusted
+publishing](https://docs.pypi.org/trusted-publishers/) — no API token is stored in the repo.
+One-time setup: add a trusted publisher for `helios-cli` on PyPI pointing at this repository,
+workflow `release.yml`, environment `pypi`.
+
+```bash
+# bump version in pyproject.toml, commit, then:
+git tag v0.2.0 && git push origin v0.2.0
+```
+
+The workflow refuses to publish when the tag does not match the version in `pyproject.toml`.
+
 ## Requirements
 
 - Python 3.10+
